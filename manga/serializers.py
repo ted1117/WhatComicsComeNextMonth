@@ -1,8 +1,12 @@
 from rest_framework import serializers
 
-from manga.models import Manga
+from manga.models import Manga, Publisher
+
 
 class MangaModelSerializer(serializers.ModelSerializer):
+    # publisher = serializers.CharField(source="publisher.name")
+    publisher = serializers.StringRelatedField()
+
     class Meta:
         model = Manga
         fields = "__all__"
@@ -10,6 +14,7 @@ class MangaModelSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["published_at"].input_formats = ["%Y-%m-%d"]
+
 
 class MangaSerializer(serializers.Serializer):
     title = serializers.CharField()
