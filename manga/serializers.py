@@ -9,11 +9,18 @@ class MangaModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Manga
-        fields = "__all__"
+        # fields = "__all__"
+        exclude = ["id"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["published_at"].input_formats = ["%Y-%m-%d"]
+
+
+class MangaCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Manga
+        fields = "__all__"
 
 
 class MangaSerializer(serializers.Serializer):

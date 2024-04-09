@@ -1,5 +1,4 @@
 from datetime import date, datetime, timedelta
-import select
 from django.shortcuts import render
 from django.conf import settings
 import requests
@@ -8,8 +7,11 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from silk.profiling.profiler import silk_profile
+
 from manga.models import Manga, Publisher
-from manga.serializers import MangaModelSerializer, MangaSerializer
+from manga.serializers import MangaCreateSerializer, MangaModelSerializer, MangaSerializer
+from manga.utils import is_numeric, parse_staff, calculate_next_month
 
 
 # Create your views here.
@@ -18,15 +20,7 @@ class MangaListAPIView(generics.ListAPIView):
     serializer_class = MangaModelSerializer
 
 
-def calculate_next_month():
-    today = date.today()
-
-    next_month_first_day = datetime(today.year, today.month + 1, 1)
-    next_month_last_day = datetime(today.year, today.month + 2, 1) - timedelta(days=1)
-
-    return next_month_first_day.strftime("%Y%m%d"), next_month_last_day.strftime("%Y%m%d")
-
-
+@silk_profile()
 def get_manga():
     url = f"https://www.nl.go.kr/seoji/SearchApi.do?"
 
@@ -54,24 +48,27 @@ def get_manga():
     for publisher in publisher_list:
         params["publisher"] = publisher.search_keyword
         request_url = url + "&".join([f"{key}={value}" for key, value in params.items() if value])
-        print(request_url)
         try:
             response = requests.get(request_url)
             if response.status_code == 200:
                 data = response.json()
 
-                selected_data += [
-                    {
-                        "title": manga["TITLE"],
-                        "series_title": manga["SERIES_TITLE"],
-                        "author": manga["AUTHOR"],
-                        "publisher": publisher.pk,
-                        "published_at": datetime.strptime(manga["PUBLISH_PREDATE"], "%Y%m%d").date(),
-                        "price": int(manga["PRE_PRICE"]),
-                    }
-                    for manga in data["docs"]
-                    if not manga["PRE_PRICE"].isalpha() and manga["EA_ADD_CODE"] == publisher.ea_add_code
-                ]
+                for manga in data["docs"]:
+                    if is_numeric(manga["PRE_PRICE"]) and manga["EA_ADD_CODE"] == publisher.ea_add_code:
+                        author, illustrator, original_author, translator = parse_staff(manga["AUTHOR"])
+                        selected_data += [
+                            {
+                                "title": manga["TITLE"],
+                                "series_title": manga["SERIES_TITLE"],
+                                "author": author,
+                                "illustrator": illustrator,
+                                "original_author": original_author,
+                                "translator": translator,
+                                "publisher": publisher.pk,
+                                "published_at": datetime.strptime(manga["PUBLISH_PREDATE"], "%Y%m%d").date(),
+                                "price": int(manga["PRE_PRICE"]),
+                            }
+                        ]
 
             else:
                 print(f"Error: {response.status_code}")
@@ -80,8 +77,8 @@ def get_manga():
             return None
 
     # 역직렬화
-    serializer = MangaModelSerializer(data=selected_data, many=True)
-    print(type(selected_data))
+    Manga.objects.all().delete()
+    serializer = MangaCreateSerializer(data=selected_data, many=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return serializer.validated_data
@@ -91,18 +88,7 @@ class MangaList(APIView):
     def get(self, request, *args, **kwargs):
         # get_manga()
         mangas = Manga.objects.all()
-        data = [
-            {
-                "title": manga.title,
-                "series_title": manga.series_title,
-                "author": manga.author,
-                "publisher": manga.publisher,
-                "published_at": manga.published_at,
-                "price": manga.price,
-            }
-            for manga in mangas
-        ]
-        serializer = MangaModelSerializer(instance=data, many=True)
+        serializer = MangaModelSerializer(instance=mangas, many=True)
         return Response(serializer.data)
 
 

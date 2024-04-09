@@ -21,7 +21,10 @@ class Publisher(models.Model):
 class Manga(models.Model):
     title = models.CharField(max_length=150)
     series_title = models.CharField(max_length=150, blank=True)
-    author = models.CharField(max_length=100)
+    author = models.CharField(max_length=300)
+    illustrator = models.CharField(max_length=100, null=True)
+    original_author = models.CharField(max_length=100, null=True)
+    translator = models.CharField(max_length=100, null=True)
     publisher = models.ForeignKey(Publisher, on_delete=models.DO_NOTHING)
     published_at = models.DateField()
     price = models.IntegerField()
