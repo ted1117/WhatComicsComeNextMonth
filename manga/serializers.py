@@ -17,10 +17,17 @@ class MangaModelSerializer(serializers.ModelSerializer):
         self.fields["published_at"].input_formats = ["%Y-%m-%d"]
 
 
+class MangaListSerializer(serializers.ListSerializer):
+    def create(self, validated_data):
+        mangas = [Manga(**attrs) for attrs in validated_data]
+        return Manga.objects.bulk_create(mangas)
+
+
 class MangaCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Manga
         fields = "__all__"
+        list_serilizer_class = MangaListSerializer
 
 
 class MangaSerializer(serializers.Serializer):

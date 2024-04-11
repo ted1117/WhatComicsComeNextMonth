@@ -25,6 +25,7 @@ class Manga(models.Model):
     illustrator = models.CharField(max_length=100, null=True)
     original_author = models.CharField(max_length=100, null=True)
     translator = models.CharField(max_length=100, null=True)
+    ea_isbn = models.CharField(max_length=50, blank=True)
     publisher = models.ForeignKey(Publisher, on_delete=models.DO_NOTHING)
     published_at = models.DateField()
     price = models.IntegerField()

@@ -45,6 +45,7 @@ def get_manga():
         "publisher": None,
     }
     selected_data = []
+    existing_isbns = set(Manga.objects.values_list("ea_isbn", flat=True))
     for publisher in publisher_list:
         params["publisher"] = publisher.search_keyword
         request_url = url + "&".join([f"{key}={value}" for key, value in params.items() if value])
@@ -54,10 +55,10 @@ def get_manga():
                 data = response.json()
 
                 for manga in data["docs"]:
-                    if is_numeric(manga["PRE_PRICE"]) and manga["EA_ADD_CODE"] == publisher.ea_add_code:
-                        author, illustrator, original_author, translator = parse_staff(manga["AUTHOR"])
-                        selected_data += [
-                            {
+                    if manga["EA_ISBN"] not in existing_isbns:
+                        if is_numeric(price := manga["PRE_PRICE"]) and manga["EA_ADD_CODE"] == publisher.ea_add_code:
+                            author, illustrator, original_author, translator = parse_staff(manga["AUTHOR"])
+                            manga_data = {
                                 "title": manga["TITLE"],
                                 "series_title": manga["SERIES_TITLE"],
                                 "author": author,
@@ -66,9 +67,10 @@ def get_manga():
                                 "translator": translator,
                                 "publisher": publisher.pk,
                                 "published_at": datetime.strptime(manga["PUBLISH_PREDATE"], "%Y%m%d").date(),
-                                "price": int(manga["PRE_PRICE"]),
+                                "ea_isbn": manga["EA_ISBN"],
+                                "price": int(price),
                             }
-                        ]
+                            selected_data.append(manga_data)
 
             else:
                 print(f"Error: {response.status_code}")
@@ -77,7 +79,6 @@ def get_manga():
             return None
 
     # 역직렬화
-    Manga.objects.all().delete()
     serializer = MangaCreateSerializer(data=selected_data, many=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -85,8 +86,10 @@ def get_manga():
 
 
 class MangaList(APIView):
+
+    @silk_profile(name="manga2")
     def get(self, request, *args, **kwargs):
-        # get_manga()
+        get_manga()
         mangas = Manga.objects.all()
         serializer = MangaModelSerializer(instance=mangas, many=True)
         return Response(serializer.data)
