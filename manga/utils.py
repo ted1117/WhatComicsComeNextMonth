@@ -61,3 +61,7 @@ def extract_authors(staff_string):
 
 def is_numeric(price):
     return bool(re.match(r"[0-9]+$", price))
+
+
+def is_set(title):
+    return bool(re.search("합본", title))
