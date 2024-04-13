@@ -1,27 +1,98 @@
+import asyncio
 from datetime import date, datetime, timedelta
+import aiohttp
 from django.shortcuts import render
 from django.conf import settings
+from drfasyncview import AsyncAPIView
 import requests
 
-from rest_framework import generics, status
+from rest_framework import generics, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+
+from django_filters.rest_framework import DjangoFilterBackend
 
 from silk.profiling.profiler import silk_profile
 
 from manga.models import Manga, Publisher
 from manga.serializers import MangaCreateSerializer, MangaModelSerializer, MangaSerializer
-from manga.utils import is_numeric, parse_staff, calculate_next_month
+from manga.utils import is_numeric, is_set, parse_staff, calculate_next_month
 
 
 # Create your views here.
-class MangaListAPIView(generics.ListAPIView):
-    queryset = Manga.objects.all()
-    serializer_class = MangaModelSerializer
+async def fetch_data(session, url):
+    async with session.get(url) as response:
+        if response.status == 200:
+            return await response.json()
+        else:
+            print(f"Error: {response.status}")
+            return None
+
+
+async def manga_to_db(session, publisher, existing_isbns):
+    url = f"https://www.nl.go.kr/seoji/SearchApi.do?"
+
+    API_KEY = settings.API_KEY
+    result_style = "json"
+    page_no = 1
+    page_size = 200
+    title = ""
+    # start_publish_date, end_publish_date = calculate_next_month()
+    start_publish_date, end_publish_date = "20240401", "20240430"
+
+    params = {
+        "cert_key": API_KEY,
+        "result_style": result_style,
+        "page_no": page_no,
+        "page_size": page_size,
+        "ebook_yn": "Y",
+        "title": title,
+        "start_publish_date": start_publish_date,
+        "end_publish_date": end_publish_date,
+        "publisher": publisher.search_keyword,
+    }
+    selected_data = []
+    request_url = url + "&".join([f"{key}={value}" for key, value in params.items() if value])
+    data = await fetch_data(session, request_url)
+
+    if data:
+        for manga in data["docs"]:
+            if manga["EA_ISBN"] not in existing_isbns:
+                if is_numeric(price := manga["PRE_PRICE"]) and manga["EA_ADD_CODE"] == publisher.ea_add_code:
+                    author, illustrator, original_author, translator = parse_staff(manga["AUTHOR"])
+                    manga_data = {
+                        "title": manga["TITLE"],
+                        "series_title": manga["SERIES_TITLE"],
+                        "isSet": is_set(manga["TITLE"]),
+                        "author": author,
+                        "illustrator": illustrator,
+                        "original_author": original_author,
+                        "translator": translator,
+                        "publisher": publisher.pk,
+                        "published_at": datetime.strptime(manga["PUBLISH_PREDATE"], "%Y%m%d").date(),
+                        "ea_isbn": manga["EA_ISBN"],
+                        "price": int(price),
+                    }
+                    selected_data.append(manga_data)
+
+        serializer = MangaCreateSerializer(data=selected_data, many=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return serializer.validated_data
+
+
+async def get_manga():
+    publishers = Publisher.objects.all()
+    existing_isbns = set(Manga.objects.values_list("ea_isbn", flat=True))
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [manga_to_db(session, publisher, existing_isbns) for publisher in publishers]
+        await asyncio.gather(*tasks)
 
 
 @silk_profile()
-def get_manga():
+def get_manga1():
     url = f"https://www.nl.go.kr/seoji/SearchApi.do?"
 
     API_KEY = settings.API_KEY
@@ -85,14 +156,60 @@ def get_manga():
     return serializer.validated_data
 
 
-class MangaList(APIView):
+class MangaPageNumberPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
-    @silk_profile(name="manga2")
-    def get(self, request, *args, **kwargs):
-        get_manga()
+
+class MangaList(AsyncAPIView):
+    pagination_class = MangaPageNumberPagination
+
+    @property
+    def paginator(self):
+        if not hasattr(self, "_paginator"):
+            if self.pagination_class is None:
+                self._paginator = None
+            else:
+                self._paginator = self.pagination_class()
+        return self._paginator
+
+    def paginate_queryset(self, queryset):
+        if self.paginator is None:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+    def get_paginated_response(self, data):
+        assert self.paginator is not None
+        return self.paginator.get_paginated_response(data)
+
+    # @silk_profile(name="manga2")
+    async def get(self, request, *args, **kwargs):
+        await get_manga()
         mangas = Manga.objects.all()
         serializer = MangaModelSerializer(instance=mangas, many=True)
-        return Response(serializer.data)
+        page = self.paginate_queryset(mangas)
+        if page is not None:
+            serializer = MangaModelSerializer(instance=page, many=True)
+            serializer = self.get_paginated_response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MangaListAPIView(generics.ListAPIView):
+    queryset = Manga.objects.all().order_by("id")
+    serializer_class = MangaModelSerializer
+    pagination_class = MangaPageNumberPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ["publisher", "isSet"]
+    search_fields = ["title", "author"]
+
+
+class MangaTestAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        get_manga1()
+        mangas = Manga.objects.all()
+        serializer = MangaModelSerializer(instance=mangas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # get_manga()

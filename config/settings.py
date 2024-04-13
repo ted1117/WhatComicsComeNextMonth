@@ -32,6 +32,9 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = []
+import os
+
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 # Application definition
@@ -46,6 +49,7 @@ INSTALLED_APPS = [
     "manga.apps.MangaConfig",
     "rest_framework",
     "silk",
+    "django_filters",
 ]
 
 MIDDLEWARE = [
@@ -58,6 +62,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "silk.middleware.SilkyMiddleware",
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
+}
 
 ROOT_URLCONF = "config.urls"
 
