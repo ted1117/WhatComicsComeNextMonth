@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "manga.apps.MangaConfig",
+    "cart.apps.CartConfig",
+    "user.apps.UserConfig",
     "rest_framework",
     "silk",
     "django_filters",
@@ -151,3 +153,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Silk
 SILKY_PYTHON_PROFILER = True
+
+# User
+AUTH_USER_MODEL = "user.CustomUser"
