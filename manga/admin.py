@@ -1,4 +1,6 @@
 from django.contrib import admin
+
+from user.models import CustomUser
 from .models import Manga, Publisher
 
 
@@ -9,3 +11,4 @@ class MangaAdmin(admin.ModelAdmin):
 
 admin.site.register(Manga, MangaAdmin)
 admin.site.register(Publisher)
+admin.site.register(CustomUser)
