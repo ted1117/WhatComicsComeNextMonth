@@ -9,3 +9,7 @@ from user.serializers import UserSerializer
 class UserCreate(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+
+
+def index(request):
+    return render(request, "register.html", context={})
