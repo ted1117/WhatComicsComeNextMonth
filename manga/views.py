@@ -38,8 +38,8 @@ async def manga_to_db(session, publisher, existing_isbns):
     page_no = 1
     page_size = 200
     title = ""
-    # start_publish_date, end_publish_date = calculate_next_month()
-    start_publish_date, end_publish_date = "20240401", "20240430"
+    start_publish_date, end_publish_date = calculate_next_month()
+    # start_publish_date, end_publish_date = "20240401", "20240430"
 
     params = {
         "cert_key": API_KEY,
