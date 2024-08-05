@@ -6,7 +6,6 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ["email", "password"]
-        # exclude = ["last_login"]
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(

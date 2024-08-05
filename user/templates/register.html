@@ -68,10 +68,15 @@
             body: JSON.stringify({email: email, password: password})
           })
             .then(response => {
-              if (!response.ok) {
-                throw new Error("회원가입에 실패했습니다.");
-              }
-              return response.json();
+              return response
+                .json()
+                .then(data => {
+                  if (!response.ok) {
+                    // response.ok가 false일 경우, 서버에서 반환된 오류 메시지를 처리합니다.
+                    throw data;
+                  }
+                  return data;
+                });
             })
             .then(data => {
               // 회원가입 성공 시 처리할 코드 작성
@@ -81,7 +86,7 @@
             .catch(error => {
               // 회원가입 실패 시 처리할 코드 작성
               console.error("회원가입 오류:", error.message);
-              alert("회원가입에 실패했습니다. 다시 시도해주세요.");
+              alert("Error: " + error.errors.email);
             });
         });
     </script>
