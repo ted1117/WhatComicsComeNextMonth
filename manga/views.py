@@ -100,8 +100,8 @@ def get_manga1():
     page_no = 1
     page_size = 200
     title = ""
-    # start_publish_date, end_publish_date = calculate_next_month()
-    start_publish_date, end_publish_date = "20240401", "20240430"
+    start_publish_date, end_publish_date = calculate_next_month()
+    # start_publish_date, end_publish_date = "20240401", "20240430"
     publisher_list = [x for x in Publisher.objects.all()]
 
     params = {
@@ -163,80 +163,14 @@ class MangaPageNumberPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class MangaList(AsyncAPIView):
-    pagination_class = MangaPageNumberPagination
-
-    @property
-    def paginator(self):
-        if not hasattr(self, "_paginator"):
-            if self.pagination_class is None:
-                self._paginator = None
-            else:
-                self._paginator = self.pagination_class()
-        return self._paginator
-
-    def paginate_queryset(self, queryset):
-        if self.paginator is None:
-            return None
-        return self.paginator.paginate_queryset(queryset, self.request, view=self)
-
-    def get_paginated_response(self, data):
-        assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
-
-    # @silk_profile(name="manga2")
-    async def get(self, request, *args, **kwargs):
-        await get_manga()
-        mangas = Manga.objects.all()
-        page = self.paginate_queryset(mangas)
-        if page is not None:
-            serializer = MangaModelSerializer(instance=page, many=True)
-            serializer = self.get_paginated_response(serializer.data)
-        else:
-            serializer = MangaModelSerializer(instance=mangas, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 class MangaListAPIView(generics.ListAPIView):
+    get_manga1()
     queryset = Manga.objects.all().order_by("published_at")
     serializer_class = MangaModelSerializer
     pagination_class = MangaPageNumberPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["publisher", "isSet"]
     search_fields = ["title", "author"]
-
-
-class MangaTestAPIView(APIView):
-    pagination_class = MangaPageNumberPagination
-
-    @property
-    def paginator(self):
-        if not hasattr(self, "_paginator"):
-            if self.pagination_class is None:
-                self._paginator = None
-            else:
-                self._paginator = self.pagination_class()
-        return self._paginator
-
-    def paginate_queryset(self, queryset):
-        if self.paginator is None:
-            return None
-        return self.paginator.paginate_queryset(queryset, self.request, view=self)
-
-    def get_paginated_response(self, data):
-        assert self.paginator is not None
-        return self.paginator.get_paginated_response(data)
-
-    def get(self, request, *args, **kwargs):
-        get_manga1()
-        mangas = Manga.objects.all()
-        page = self.paginate_queryset(mangas)
-        if page is not None:
-            serializer = MangaModelSerializer(instance=page, many=True)
-            serializer = self.get_paginated_response(serializer.data)
-        else:
-            serializer = MangaModelSerializer(instance=mangas, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 def index(request):

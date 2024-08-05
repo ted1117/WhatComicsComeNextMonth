@@ -14,6 +14,9 @@
         
         <div id="pagination-controls" class="mt-3">
             <button id="prev-button" class="btn btn-primary" disabled>Previous</button>
+            <div id="page-buttons" class="d-inline-block mx-3">
+                <!-- 페이지 번호 버튼이 여기에 생성됩니다. -->
+            </div>
             <button id="next-button" class="btn btn-primary">Next</button>
         </div>
     </div>
@@ -52,12 +55,6 @@
                     const authorElement = document.createElement('p');
                     authorElement.textContent = `작가: ${comic.author}`;
                     
-                    
-                    
-
-                    
-                    
-
                     // Create comic price element
                     const priceElement = document.createElement('p');
                     priceElement.textContent = `가격: ${comic.price}`;
@@ -69,19 +66,16 @@
                     // Append elements to list item
                     listItem.appendChild(titleElement);
                     listItem.appendChild(authorElement);
-                    // Create comic author element
                     if (comic.illustrator) {
                         const illustratorElement = document.createElement('p');
                         illustratorElement.textContent = `그림: ${comic.illustrator}`;
                         listItem.appendChild(illustratorElement);
                     }
-                    // Create comic author element
                     if (comic.original_author) {
                         const orgauthorElement = document.createElement('p');
                         orgauthorElement.textContent = `원작자: ${comic.original_author}`;
                         listItem.appendChild(orgauthorElement);
                     }
-                    
                     listItem.appendChild(priceElement);
                     listItem.appendChild(pubdateElement);
                     
@@ -90,30 +84,61 @@
                 });
                 
                 // Update pagination controls
-                const prevButton = document.getElementById('prev-button');
-                const nextButton = document.getElementById('next-button');
-                // prevButton.href = `${data.previous}`;
-                // nextButton.href = `${data.next}`;
-                prevButton.setAttribute("href", data.previous);
-                nextButton.setAttribute("href", data.next);
-                prevButton.disabled = !data.previous;
-                nextButton.disabled = !data.next;
+                updatePaginationControls(data);
                 
             } catch (error) {
                 console.error('Error fetching comics:', error);
             }
         }
 
-        // Event handlers for pagination controls
-        // document.getElementById('prev-button').addEventListener('click', () => {
-        //     apiUrl = paginationData.previous;
-        //     fetchAndDisplayComics();
-        // });
+        // Function to update pagination controls
+        function updatePaginationControls(data) {
+            const prevButton = document.getElementById('prev-button');
+            const nextButton = document.getElementById('next-button');
+            const pageButtonsContainer = document.getElementById('page-buttons');
+            
+            prevButton.disabled = !data.previous;
+            nextButton.disabled = !data.next;
+            
+            // Clear existing page buttons
+            pageButtonsContainer.innerHTML = '';
+            
+            // Calculate total pages from API data
+            const totalPages = Math.ceil(data.count / data.results.length);
+            const currentPage = parseInt(new URL(apiUrl).searchParams.get('page')) || 1;
+            
+            // Create and append page buttons
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = 'btn btn-secondary mx-1';
+                if (i === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                pageButton.addEventListener('click', () => {
+                    apiUrl = `http://127.0.0.1:8000/api/manga/?page=${i}`;
+                    fetchAndDisplayComics();
+                });
+                pageButtonsContainer.appendChild(pageButton);
+            }
+        }
 
-        // document.getElementById('next-button').addEventListener('click', () => {
-        //     apiUrl = paginationData.next;
-        //     fetchAndDisplayComics();
-        // });
+        // Event handlers for pagination controls
+        document.getElementById('prev-button').addEventListener('click', (event) => {
+            event.preventDefault();
+            if (paginationData.previous) {
+                apiUrl = paginationData.previous;
+                fetchAndDisplayComics();
+            }
+        });
+
+        document.getElementById('next-button').addEventListener('click', (event) => {
+            event.preventDefault();
+            if (paginationData.next) {
+                apiUrl = paginationData.next;
+                fetchAndDisplayComics();
+            }
+        });
 
         // Call the fetchAndDisplayComics function when the page loads
         window.onload = fetchAndDisplayComics;
