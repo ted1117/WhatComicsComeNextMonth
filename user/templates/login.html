@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인</title>
+    <!-- 부트스트랩 CSS 링크 -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- 사용자 정의 CSS -->
+    <style>
+      .container {
+        margin-top: 50px;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <h2 class="text-center mb-4">로그인</h2>
+          <form id="signupForm">
+            <div class="form-group">
+              <label for="email">이메일 주소</label>
+              <input type="email" class="form-control" id="email" placeholder="이메일 주소를 입력하세요" required="required">
+            </div>
+            <div class="form-group">
+              <label for="password">비밀번호</label>
+              <input type="password" class="form-control" id="password" placeholder="비밀번호를 입력하세요" required="required">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">로그인</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 부트스트랩 JS 링크 (옵션) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+      // 로그인 폼 제출 이벤트 처리
+      document
+        .getElementById("signupForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // 기본 제출 동작 방지
+
+          // 입력된 이메일과 비밀번호 가져오기
+          var email = document
+            .getElementById("email")
+            .value;
+          var password = document
+            .getElementById("password")
+            .value;
+
+          // 로그인 API 엔드포인트
+          var signupUrl = "http://127.0.0.1:8000/user/signin/";
+
+          // Fetch API를 사용하여 로그인 요청 보내기
+          fetch(signupUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({email: email, password: password}),
+            credentials: "include",
+          })
+            .then(response => {
+              return response
+                .json()
+                .then(data => {
+                  if (!response.ok) {
+                    // response.ok가 false일 경우, 서버에서 반환된 오류 메시지를 처리합니다.
+                    throw data;
+                  }
+                  return data;
+                });
+            })
+            .then(data => {
+              // 로그인 성공 시 처리할 코드 작성
+              console.log("로그인 성공:", data);
+              localStorage.setItem('access_token', data.jwt_token.access_token);
+              alert("로그인 됐습니다.");
+              window.location.href = 'http://127.0.0.1:8000/api/index/';
+            })
+            .catch(error => {
+              // 로그인 실패 시 처리할 코드 작성
+              console.error("로그인 오류:", error.message);
+              alert("Error: " + error.errors.email);
+            });
+        });
+    </script>
+
+  </body>
+
+</html>
