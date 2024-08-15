@@ -17,14 +17,14 @@
         </ul>
         
         <div id="pagination-controls" class="mt-3">
-            <button id="prev-button" class="btn btn-primary" disabled>Previous</button>
+            <button id="prev-button" class="btn btn-primary" disabled>이전</button>
             <div id="page-buttons" class="d-inline-block mx-3">
                 <!-- 페이지 번호 버튼이 여기에 생성됩니다. -->
             </div>
-            <button id="next-button" class="btn btn-primary">Next</button>
+            <button id="next-button" class="btn btn-primary">다음</button>
         </div>
 
-        <button id="save-cart-button" class="btn btn-success mt-4">Save Cart</button>
+        <button id="save-cart-button" class="btn btn-success mt-4">장바구니 추가</button>
     </div>
 
     <script>
@@ -40,7 +40,7 @@
 
             if (token) {
                 try {
-                    const response = await fetch('http://127.0.0.1:8000/user/profile/', {
+                    const response = await fetch('http://127.0.0.1:8000/user/signin/', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`, // 헤더에 토큰 추가
@@ -81,7 +81,7 @@
             loginButton.textContent = 'Login';
             loginButton.className = 'btn btn-primary';
             loginButton.addEventListener('click', () => {
-                window.location.href = '/user/token'; // 로그인 페이지로 이동
+                window.location.href = '/user/login'; // 로그인 페이지로 이동
             });
             loginStatusElement.appendChild(loginButton);
         }
@@ -246,9 +246,9 @@
                 }
 
                 if (response.ok) {
-                    alert('Cart saved successfully!');
+                    alert('만화가 장바구니에 담겼습니다.');
                 } else {
-                    alert('Failed to save cart.');
+                    alert('만화가 장바구니에 담기지 않았습니다.');
                 }
             } catch (error) {
                 console.error('Error saving cart:', error);

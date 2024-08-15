@@ -82,7 +82,7 @@
             .then(data => {
               // 로그인 성공 시 처리할 코드 작성
               console.log("로그인 성공:", data);
-              localStorage.setItem('access_token', data.jwt_token.access_token);
+              localStorage.setItem('access_token', data.token.access);
               alert("로그인 됐습니다.");
               window.location.href = 'http://127.0.0.1:8000/api/index/';
             })
