@@ -7,15 +7,15 @@ from user.models import CustomUser
 # Create your models here.
 class Cart(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    manga = models.ForeignKey(Manga, on_delete=models.CASCADE)
-    manga_title = models.CharField(max_length=50)
-    manga_price = models.IntegerField()
-    manga_published_at = models.DateField()
+    comic = models.ForeignKey(Manga, on_delete=models.CASCADE)
+    comic_title = models.CharField(max_length=50)
+    comic_price = models.IntegerField()
+    comic_published_at = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        self.manga_title = self.manga.title
-        self.manga_price = self.manga.price
-        self.manga_published_at = self.manga.published_at
+        self.comic_title = self.comic.title
+        self.comic_price = self.comic.price
+        self.comic_published_at = self.comic.published_at
 
         super().save(*args, **kwargs)

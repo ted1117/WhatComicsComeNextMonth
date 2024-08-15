@@ -6,13 +6,14 @@ from manga.serializers import MangaModelSerializer
 
 
 class CartRetrieveSerializer(serializers.ModelSerializer):
-    manga_title = serializers.CharField(source="manga.title", read_only=True)
-    manga_price = serializers.IntegerField(source="manga.price", read_only=True)
-    manga_published_at = serializers.DateField(source="manga.published_at", read_only=True)
+    title = serializers.CharField(source="comic.title", read_only=True)
+    price = serializers.IntegerField(source="comic.price", read_only=True)
+    published_at = serializers.DateField(source="comic.published_at", read_only=True)
+    comic_id = serializers.IntegerField(source="comic.id", read_only=True)
 
     class Meta:
         model = Cart
-        fields = ["manga_title", "manga_price", "manga_published_at"]
+        fields = ["title", "price", "published_at", "comic_id"]
 
 
 class CartSerializer(serializers.Serializer):
@@ -27,15 +28,15 @@ class CartSerializer(serializers.Serializer):
         for comic_data in comics_data:
             comic = Manga.objects.get(ea_isbn=comic_data["ea_isbn"])
 
-            if Cart.objects.filter(user=user, manga=comic).exists():
+            if Cart.objects.filter(user=user, comic=comic).exists():
                 continue
 
             cart_item = Cart(
                 user=user,
-                manga=comic,
-                manga_title=comic.title,
-                manga_price=comic.price,
-                manga_published_at=comic.published_at,
+                comic=comic,
+                comic_title=comic.title,
+                comic_price=comic.price,
+                comic_published_at=comic.published_at,
             )
             cart_item.save()
             cart_items.append(cart_item)
