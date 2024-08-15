@@ -1,10 +1,9 @@
 from django.forms import ValidationError
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 from django.contrib.auth.hashers import check_password
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from user.models import CustomUser
@@ -12,11 +11,6 @@ from user.serializers import UserSerializer
 
 
 # Create your views here.
-class UserCreate(generics.CreateAPIView):
-    queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
-
-
 class UserCreateAPIView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -53,6 +47,14 @@ class UserCreateAPIView(generics.CreateAPIView):
 
 
 class AuthUserAPIView(APIView):
+    def get(self, request):
+        user = request.user
+
+        if user is not None:
+            return Response({"email": user.email}, status=status.HTTP_200_OK)
+
+        return Response({"message": "해당 사용자가 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
     def post(self, request):
         email = request.data["email"]
         password = request.data["password"]
@@ -76,13 +78,13 @@ class AuthUserAPIView(APIView):
                 {
                     "user": UserSerializer(user).data,
                     "message": "login success",
-                    "jwt_token": {"access_token": access_token, "refresh_token": refresh_token},
+                    "token": {"access": access_token, "refresh": refresh_token},
                 },
                 status=status.HTTP_200_OK,
             )
 
-            response.set_cookie("access_token", access_token, httponly=True)
-            response.set_cookie("refresh_token", refresh_token, httponly=True)
+            response.set_cookie("access", access_token, httponly=True)
+            response.set_cookie("refresh", refresh_token, httponly=True)
             return response
         else:
             return Response({"message": "로그인에 실패하였습니다."}, status=status.HTTP_400_BAD_REQUEST)
