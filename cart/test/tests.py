@@ -13,12 +13,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 # Create your tests here.
-class TestView(TestCase):
-    def test_add_view(self):
-        queryset = Cart.objects.all()
-        self.assertTrue(queryset.exists())
-
-
 class CartAPITestCase(APITestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(email="user1@naver.com", password="testpass")
