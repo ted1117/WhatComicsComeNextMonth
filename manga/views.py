@@ -18,7 +18,6 @@ class MangaPageNumberPagination(PageNumberPagination):
 
 
 class MangaListAPIView(generics.ListAPIView):
-    ComicService.fetch_comic()
     queryset = Manga.objects.all().order_by("published_at")
     serializer_class = MangaModelSerializer
     pagination_class = MangaPageNumberPagination

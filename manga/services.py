@@ -5,6 +5,8 @@ import aiohttp
 from django.conf import settings
 from silk.profiling.profiler import silk_profile
 import requests
+from celery import shared_task
+
 
 from manga.models import Manga, Publisher
 from manga.serializers import MangaCreateSerializer
@@ -15,6 +17,7 @@ class ComicService:
 
     @staticmethod
     @silk_profile()
+    @shared_task(name="manga.services.ComicSerive.fetch_comic")
     def fetch_comic():
         url: str = f"https://www.nl.go.kr/seoji/SearchApi.do?"
         API_KEY: str = settings.API_KEY
@@ -39,11 +42,15 @@ class ComicService:
         }
 
         selected_data: list[dict] = []
-        existing_isbns: set = set(Manga.objects.values_list("ea_isbn", flat=True))
+        existing_isbns: set = set(
+            Manga.objects.values_list("ea_isbn", flat=True)
+        )
 
         for publisher in publisher_list:
             params["publisher"] = publisher.search_keyword
-            request_url = url + "&".join([f"{key}={value}" for key, value in params.items() if value])
+            request_url = url + "&".join(
+                [f"{key}={value}" for key, value in params.items() if value]
+            )
             try:
                 response = requests.get(request_url)
                 if response.status_code == 200:
@@ -53,9 +60,15 @@ class ComicService:
                         if comic["EA_ISBN"] not in existing_isbns:
                             if (
                                 is_numeric(price := comic["PRE_PRICE"])
-                                and comic["EA_ADD_CODE"] == publisher.ea_add_code
+                                and comic["EA_ADD_CODE"]
+                                == publisher.ea_add_code
                             ):
-                                author, illustrator, original_author, translator = parse_staff(comic["AUTHOR"])
+                                (
+                                    author,
+                                    illustrator,
+                                    original_author,
+                                    translator,
+                                ) = parse_staff(comic["AUTHOR"])
                                 manga_data = {
                                     "title": comic["TITLE"],
                                     "series_title": comic["SERIES_TITLE"],
@@ -65,7 +78,9 @@ class ComicService:
                                     "original_author": original_author,
                                     "translator": translator,
                                     "publisher": publisher.pk,
-                                    "published_at": datetime.strptime(comic["PUBLISH_PREDATE"], "%Y%m%d").date(),
+                                    "published_at": datetime.strptime(
+                                        comic["PUBLISH_PREDATE"], "%Y%m%d"
+                                    ).date(),
                                     "ea_isbn": comic["EA_ISBN"],
                                     "price": int(price),
                                 }
@@ -80,6 +95,7 @@ class ComicService:
         serializer = MangaCreateSerializer(data=selected_data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        print("end!")
         return serializer.validated_data
 
 
@@ -115,14 +131,21 @@ async def manga_to_db(session, publisher, existing_isbns):
         "publisher": publisher.search_keyword,
     }
     selected_data = []
-    request_url = url + "&".join([f"{key}={value}" for key, value in params.items() if value])
+    request_url = url + "&".join(
+        [f"{key}={value}" for key, value in params.items() if value]
+    )
     data = await fetch_data(session, request_url)
 
     if data:
         for manga in data["docs"]:
             if manga["EA_ISBN"] not in existing_isbns:
-                if is_numeric(price := manga["PRE_PRICE"]) and manga["EA_ADD_CODE"] == publisher.ea_add_code:
-                    author, illustrator, original_author, translator = parse_staff(manga["AUTHOR"])
+                if (
+                    is_numeric(price := manga["PRE_PRICE"])
+                    and manga["EA_ADD_CODE"] == publisher.ea_add_code
+                ):
+                    author, illustrator, original_author, translator = (
+                        parse_staff(manga["AUTHOR"])
+                    )
                     manga_data = {
                         "title": manga["TITLE"],
                         "series_title": manga["SERIES_TITLE"],
@@ -132,7 +155,9 @@ async def manga_to_db(session, publisher, existing_isbns):
                         "original_author": original_author,
                         "translator": translator,
                         "publisher": publisher.pk,
-                        "published_at": datetime.strptime(manga["PUBLISH_PREDATE"], "%Y%m%d").date(),
+                        "published_at": datetime.strptime(
+                            manga["PUBLISH_PREDATE"], "%Y%m%d"
+                        ).date(),
                         "ea_isbn": manga["EA_ISBN"],
                         "price": int(price),
                     }
@@ -149,5 +174,8 @@ async def get_manga():
     existing_isbns = set(Manga.objects.values_list("ea_isbn", flat=True))
 
     async with aiohttp.ClientSession() as session:
-        tasks = [manga_to_db(session, publisher, existing_isbns) for publisher in publishers]
+        tasks = [
+            manga_to_db(session, publisher, existing_isbns)
+            for publisher in publishers
+        ]
         await asyncio.gather(*tasks)
