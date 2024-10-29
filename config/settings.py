@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # app
-    "manga.apps.MangaConfig",
+    "comic.apps.ComicConfig",
     "cart.apps.CartConfig",
     "user.apps.UserConfig",
     # library
@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "django_celery_beat",
+    "django_rename_app",
 ]
 
 MIDDLEWARE = [

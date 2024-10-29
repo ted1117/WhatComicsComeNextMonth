@@ -5,22 +5,22 @@ from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from manga.models import Manga
-from manga.serializers import MangaModelSerializer
-from manga.services import ComicService
+from comic.models import Comic
+from comic.serializers import ComicModelSerializer
+from comic.services import ComicService
 
 
 # Create your views here.
-class MangaPageNumberPagination(PageNumberPagination):
+class ComicPageNumberPagination(PageNumberPagination):
     page_size: int = 20
     page_size_query_param: str = "page_size"
     max_page_size: int = 100
 
 
-class MangaListAPIView(generics.ListAPIView):
-    queryset = Manga.objects.all().order_by("published_at")
-    serializer_class = MangaModelSerializer
-    pagination_class = MangaPageNumberPagination
+class ComicListAPIView(generics.ListAPIView):
+    queryset = Comic.objects.all().order_by("published_at")
+    serializer_class = ComicModelSerializer
+    pagination_class = ComicPageNumberPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["publisher", "isSet"]
     search_fields = ["title", "author"]

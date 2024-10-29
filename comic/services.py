@@ -8,16 +8,16 @@ import requests
 from celery import shared_task
 
 
-from manga.models import Manga, Publisher
-from manga.serializers import MangaCreateSerializer
-from manga.utils import calculate_next_month, is_numeric, is_set, parse_staff
+from comic.models import Comic, Publisher
+from comic.serializers import ComicCreateSerializer
+from comic.utils import calculate_next_month, is_numeric, is_set, parse_staff
 
 
 class ComicService:
 
     @staticmethod
     @silk_profile()
-    @shared_task(name="manga.services.ComicSerive.fetch_comic")
+    @shared_task(name="comic.services.ComicSerive.fetch_comic")
     def fetch_comic():
         url: str = f"https://www.nl.go.kr/seoji/SearchApi.do?"
         API_KEY: str = settings.API_KEY
@@ -43,7 +43,7 @@ class ComicService:
 
         selected_data: list[dict] = []
         existing_isbns: set = set(
-            Manga.objects.values_list("ea_isbn", flat=True)
+            Comic.objects.values_list("ea_isbn", flat=True)
         )
 
         for publisher in publisher_list:
@@ -69,7 +69,7 @@ class ComicService:
                                     original_author,
                                     translator,
                                 ) = parse_staff(comic["AUTHOR"])
-                                manga_data = {
+                                comic_data = {
                                     "title": comic["TITLE"],
                                     "series_title": comic["SERIES_TITLE"],
                                     "isSet": is_set(comic["TITLE"]),
@@ -84,7 +84,7 @@ class ComicService:
                                     "ea_isbn": comic["EA_ISBN"],
                                     "price": int(price),
                                 }
-                                selected_data.append(manga_data)
+                                selected_data.append(comic_data)
                 else:
                     print(f"Error: {response.status_code}")
             except Exception as e:
@@ -92,7 +92,7 @@ class ComicService:
                 return None
 
         # 데이터 역직렬화 및 저장
-        serializer = MangaCreateSerializer(data=selected_data, many=True)
+        serializer = ComicCreateSerializer(data=selected_data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         print("end!")
@@ -108,7 +108,7 @@ async def fetch_data(session, url):
             return None
 
 
-async def manga_to_db(session, publisher, existing_isbns):
+async def comic_to_db(session, publisher, existing_isbns):
     url = f"https://www.nl.go.kr/seoji/SearchApi.do?"
 
     API_KEY = settings.API_KEY
@@ -137,45 +137,45 @@ async def manga_to_db(session, publisher, existing_isbns):
     data = await fetch_data(session, request_url)
 
     if data:
-        for manga in data["docs"]:
-            if manga["EA_ISBN"] not in existing_isbns:
+        for comic in data["docs"]:
+            if comic["EA_ISBN"] not in existing_isbns:
                 if (
-                    is_numeric(price := manga["PRE_PRICE"])
-                    and manga["EA_ADD_CODE"] == publisher.ea_add_code
+                    is_numeric(price := comic["PRE_PRICE"])
+                    and comic["EA_ADD_CODE"] == publisher.ea_add_code
                 ):
                     author, illustrator, original_author, translator = (
-                        parse_staff(manga["AUTHOR"])
+                        parse_staff(comic["AUTHOR"])
                     )
-                    manga_data = {
-                        "title": manga["TITLE"],
-                        "series_title": manga["SERIES_TITLE"],
-                        "isSet": is_set(manga["TITLE"]),
+                    comic_data = {
+                        "title": comic["TITLE"],
+                        "series_title": comic["SERIES_TITLE"],
+                        "isSet": is_set(comic["TITLE"]),
                         "author": author,
                         "illustrator": illustrator,
                         "original_author": original_author,
                         "translator": translator,
                         "publisher": publisher.pk,
                         "published_at": datetime.strptime(
-                            manga["PUBLISH_PREDATE"], "%Y%m%d"
+                            comic["PUBLISH_PREDATE"], "%Y%m%d"
                         ).date(),
-                        "ea_isbn": manga["EA_ISBN"],
+                        "ea_isbn": comic["EA_ISBN"],
                         "price": int(price),
                     }
-                    selected_data.append(manga_data)
+                    selected_data.append(comic_data)
 
-        serializer = MangaCreateSerializer(data=selected_data, many=True)
+        serializer = ComicCreateSerializer(data=selected_data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return serializer.validated_data
 
 
-async def get_manga():
+async def get_comic():
     publishers = Publisher.objects.all()
-    existing_isbns = set(Manga.objects.values_list("ea_isbn", flat=True))
+    existing_isbns = set(Comic.objects.values_list("ea_isbn", flat=True))
 
     async with aiohttp.ClientSession() as session:
         tasks = [
-            manga_to_db(session, publisher, existing_isbns)
+            comic_to_db(session, publisher, existing_isbns)
             for publisher in publishers
         ]
         await asyncio.gather(*tasks)

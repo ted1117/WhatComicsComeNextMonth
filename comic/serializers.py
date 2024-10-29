@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
-from manga.models import Manga, Publisher
+from comic.models import Comic, Publisher
 
 
-class MangaModelSerializer(serializers.ModelSerializer):
+class ComicModelSerializer(serializers.ModelSerializer):
     # publisher = serializers.CharField(source="publisher.name")
     publisher = serializers.StringRelatedField()
 
     class Meta:
-        model = Manga
+        model = Comic
         # fields = "__all__"
         exclude = ["id"]
 
@@ -17,20 +17,20 @@ class MangaModelSerializer(serializers.ModelSerializer):
         self.fields["published_at"].input_formats = ["%Y-%m-%d"]
 
 
-class MangaListSerializer(serializers.ListSerializer):
+class ComicListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
-        mangas = [Manga(**attrs) for attrs in validated_data]
-        return Manga.objects.bulk_create(mangas)
+        comics = [Comic(**attrs) for attrs in validated_data]
+        return Comic.objects.bulk_create(comics)
 
 
-class MangaCreateSerializer(serializers.ModelSerializer):
+class ComicCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Manga
+        model = Comic
         fields = "__all__"
-        list_serilizer_class = MangaListSerializer
+        list_serilizer_class = ComicListSerializer
 
 
-class MangaSerializer(serializers.Serializer):
+class ComicSerializer(serializers.Serializer):
     title = serializers.CharField()
     series_title = serializers.CharField()
     author = serializers.CharField(max_length=30)

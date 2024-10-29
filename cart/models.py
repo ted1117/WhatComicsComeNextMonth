@@ -1,13 +1,13 @@
 from django.db import models
 
-from manga.models import Manga
+from comic.models import Comic
 from user.models import CustomUser
 
 
 # Create your models here.
 class Cart(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    comic = models.ForeignKey(Manga, on_delete=models.CASCADE)
+    comic = models.ForeignKey(Comic, on_delete=models.CASCADE)
     comic_title = models.CharField(max_length=50)
     comic_price = models.IntegerField()
     comic_published_at = models.DateField()

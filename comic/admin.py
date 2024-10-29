@@ -1,14 +1,14 @@
 from django.contrib import admin
 
 from user.models import CustomUser
-from .models import Manga, Publisher
+from .models import Comic, Publisher
 
 
 # Register your models here.
-class MangaAdmin(admin.ModelAdmin):
+class ComicAdmin(admin.ModelAdmin):
     search_fields = ["title"]
 
 
-admin.site.register(Manga, MangaAdmin)
+admin.site.register(Comic, ComicAdmin)
 admin.site.register(Publisher)
 admin.site.register(CustomUser)

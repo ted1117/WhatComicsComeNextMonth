@@ -20,7 +20,7 @@ app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
     "test-periodic-job": {
-        "task": "manga.services.ComicSerive.fetch_comic",
+        "task": "comic.services.ComicSerive.fetch_comic",
         # "schedule": crontab(
         #     minute="0", hour="12, 15, 18", day_of_week="mon-fri"
         # ),

@@ -18,7 +18,7 @@ class Publisher(models.Model):
         super().save(*args, **kwargs)
 
 
-class Manga(models.Model):
+class Comic(models.Model):
     title = models.CharField(max_length=150)
     series_title = models.CharField(max_length=150, blank=True)
     author = models.CharField(max_length=300)
