@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 import environ
+import rest_framework
+import rest_framework.permissions
 
 env = environ.Env(DEBUG=(bool, True))
 
@@ -54,12 +56,14 @@ INSTALLED_APPS = [
     # library
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "silk",
     "django_filters",
     "corsheaders",
     "django_celery_beat",
     "django_extensions",
     "django_rename_app",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -101,13 +105,25 @@ CORS_ALLOW_ALL_ORIGINS = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # "rest_framework.authentication.TokenAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "user.authentication.CustomJWTAuthentication",
+        # "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         # "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "WhatComicsComeNextMonth",
+    "DESCRIPTION": "다음달 출간될 만화책 e북을 알아보고 내가 본 만화를 기록하는 서비스",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "AUTHENTICATION_WHITELIST": [
+        "user.authentication.CustomJWTAuthentication",
     ],
 }
 
