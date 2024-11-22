@@ -18,10 +18,31 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from drf_spectacular.views import (
+    SpectacularJSONAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+    SpectacularYAMLAPIView,
+)
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("comic.urls")),
     path("cart/", include("cart.urls")),
-    path("user/", include("user.urls")),
+    path("users/", include("user.urls")),
     path("silk/", include("silk.urls", namespace="silk")),
+    # Open API 문서
+    path("docs/json/", SpectacularJSONAPIView.as_view(), name="schema-json"),
+    path("docs/yaml/", SpectacularYAMLAPIView.as_view(), name="schema-yaml"),
+    # Open API Document with UI
+    path(
+        "docs/swagger/",
+        SpectacularSwaggerView.as_view(url_name="schema-json"),
+        name="swagger-ui",
+    ),
+    path(
+        "docs/redoc/",
+        SpectacularRedocView.as_view(url_name="schema-json"),
+        name="redoc",
+    ),
 ]
