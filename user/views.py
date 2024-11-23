@@ -1,122 +1,37 @@
+from typing import Dict, Any
+
 from django.shortcuts import render
-from django.contrib.auth.hashers import check_password
-from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
+from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 
+from user.authentication import CustomJWTAuthentication
 from user.models import CustomUser
-from user.serializers import CustomTokenObtainPairSerializer, UserSerializer
+from user.permissions import IsAdminOrOwner
+from user.serializers import CustomTokenObtainPairSerializer, UserSchema, UserSerializer
 from user.services import UserService
 
 
 # Create your views here.
-class UserCreateAPIView(generics.CreateAPIView):
+class UserViewset(viewsets.ModelViewSet):
+    """
+    사용자 관리 Viewset
+    ----
+    사용자 계정에 CRUD 기능 제공
+    - 회원 가입
+    - 회원 목록 조회
+    - 회원 정보 상세 조회
+    - 회원 비활성화
+    """
+
     queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-            user = serializer.save()
-
-            # jwt
-            token = TokenObtainPairSerializer.get_token(user)
-            refresh_token = str(token)
-            access_token = str(token.access_token)
-            response = Response(
-                {
-                    "user": serializer.data,
-                    "message": "Signup success",
-                    "token": {
-                        "access": access_token,
-                        "refresh": refresh_token,
-                    },
-                },
-                status=status.HTTP_200_OK,
-            )
-
-            response.set_cookie("access", access_token, httponly=True)
-            response.set_cookie("refresh", refresh_token, httponly=True)
-
-            return response
-        except:
-            response = {
-                "message": "Signup failed",
-                "errors": serializer.errors,
-            }
-            return Response(response, status=status.HTTP_400_BAD_REQUEST)
-
-
-class AuthUserAPIView(APIView):
-    def get(self, request):
-        user = request.user
-
-        if user is not None:
-            return Response({"email": user.email}, status=status.HTTP_200_OK)
-
-        return Response(
-            {"message": "해당 사용자가 없습니다."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-
-    def post(self, request):
-        email = request.data["email"]
-        password = request.data["password"]
-
-        user = CustomUser.objects.filter(email=email).first()
-
-        # 만약 username에 맞는 user가 존재하지 않는다면,
-        if user is None:
-            return Response(
-                {"message": "존재하지 않는 아이디입니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # 비밀번호가 틀린 경우,
-        if not check_password(password, user.password):
-            return Response(
-                {"message": "비밀번호가 틀렸습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # user가 맞다면,
-        if user is not None:
-            token = TokenObtainPairSerializer.get_token(
-                user
-            )  # refresh 토큰 생성
-            refresh_token = str(token)  # refresh 토큰 문자열화
-            access_token = str(token.access_token)  # access 토큰 문자열화
-            response = Response(
-                {
-                    "user": UserSerializer(user).data,
-                    "message": "login success",
-                    "token": {
-                        "access": access_token,
-                        "refresh": refresh_token,
-                    },
-                },
-                status=status.HTTP_200_OK,
-            )
-
-            response.set_cookie("access", access_token, httponly=True)
-            response.set_cookie("refresh", refresh_token, httponly=True)
-            return response
-        else:
-            return Response(
-                {"message": "로그인에 실패하였습니다."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-
-class UserViewset(viewsets.GenericViewSet):
-    queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserSchema
 
     def __init__(self, *args, **kwargs):
+        """
+        UserViewset 초기화
+        """
         super().__init__(*args, **kwargs)
 
         self.user_service = UserService(
@@ -125,12 +40,41 @@ class UserViewset(viewsets.GenericViewSet):
             token_serializer=CustomTokenObtainPairSerializer,
         )
 
+    def get_authenticators(self):
+        """
+        요청에 따라 인증 클래스 결정
+
+        POST 요청(회원가입)은 인증을 건너뛴다.
+        """
+        if not self.request or not hasattr(self.request, "method"):
+            # drf-spectacular에서 호출될 때 Mock Request를 처리
+            return [CustomJWTAuthentication()]
+
+        if self.request.method == "post":
+            return []
+        return [CustomJWTAuthentication()]
+
     def get_permissions(self):
-        if self.action in ("create", "login"):
+        """
+        요청된 action에 따라 권한 설정
+
+        - create: 누구나 접근 가능 (회원가입)
+        - list: 관리자만 접근 가능
+        - 기타: 관리자 혹은 본인만 접근 가능
+        """
+        if self.action == "create":
             return [AllowAny()]
-        return [IsAuthenticated()]
+        elif self.action == "list":
+            return [IsAdminUser()]
+        else:
+            return [IsAdminOrOwner()]
 
     def create(self, request):
+        """
+        회원가입 처리.
+        ----
+        새 사용자를 등록하고 사용자 정보와 액세스/리프레시 토큰을 반환합니다.
+        """
         try:
             result = self.user_service.register_user(request.data)
             response = Response(
@@ -170,16 +114,12 @@ class UserViewset(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    def retrieve(self, request, pk=None):
-        if pk != str(request.user.pk):
-            return Response(
-                {"message": "권한이 없습니다."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
-
     def destroy(self, request, pk=None):
+        """
+        사용자 계정 비활성화.
+        ----
+        사용자는 자신의 계정만 비활성화할 수 있으며, 관리자는 이를 수행할 수 없습니다.
+        """
         if pk != str(request.user.pk):
             return Response(
                 {"message": "권한이 없습니다."},
@@ -201,14 +141,42 @@ class UserViewset(viewsets.GenericViewSet):
 
         return response
 
-    @action(detail=False, methods=["post"], permission_classes=[AllowAny])
-    def login(self, request):
+
+class UserLoginView(APIView):
+    """
+    사용자 로그인 APIView.
+    ----
+    사용자 인증 후 액세스 토큰과 리프레시 토큰을 반환합니다.
+    """
+
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def __init__(self, **kwargs: Any):
+        """
+        UserLoginView 초기화.
+        ----
+        """
+        super().__init__(**kwargs)
+        self.user_service = UserService(
+            user_model=CustomUser,
+            serializer_class=None,
+            token_serializer=CustomTokenObtainPairSerializer,
+        )
+
+    def post(self, request):
+        """
+        사용자 로그인 처리.
+        ----
+        사용자 인증 후 액세스 토큰과 리프레시 토큰을 반환하고, 이를 쿠키에 저장
+        """
         try:
             result = self.user_service.login_user(request.data)
             response = Response(
                 {
                     "user": result["email"],
-                    "message": "login success",
+                    "message": "로그인 성공",
                     "token": {
                         "access": result["access_token"],
                         "refresh": result["refresh_token"],
@@ -216,7 +184,7 @@ class UserViewset(viewsets.GenericViewSet):
                 },
                 status=status.HTTP_200_OK,
             )
-
+            # 쿠키에 토큰 저장
             response.set_cookie(
                 key="access",
                 value=result["access_token"],
@@ -231,26 +199,57 @@ class UserViewset(viewsets.GenericViewSet):
                 secure=True,
                 samesite="Lax",
             )
-
             return response
         except Exception as e:
             return Response(
-                {"message": "로그인 오류!", "error": str(e)},
+                {"message": "로그인 실패", "errors": str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    @action(detail=False, methods=["post"])
-    def logout(self, request):
-        refresh = request.COOKIES.get("refresh_token")
-        self.user_service.logout_user(refresh)
 
-        response = Response(
-            {"message": "로그아웃됐습니다."}, status=status.HTTP_200_OK
+class UserLogoutView(APIView):
+    """
+    사용자 로그아웃 APIView.
+    ----
+    리프레시 토큰을 무효화하고 쿠키를 삭제하여 로그아웃을 처리
+    """
+
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def __init__(self, **kwargs: Any):
+        """
+        UserLogoutView 초기화.
+        """
+        super().__init__(**kwargs)
+        self.user_service = UserService(
+            user_model=CustomUser,
+            serializer_class=None,
+            token_serializer=CustomTokenObtainPairSerializer,
         )
 
+    def post(self, request):
+        """
+        사용자 로그아웃 처리
+        ----
+        리프레시 토큰을 무효화하고 액세스/리프레시 쿠키를 삭제
+        """
+        refresh_token = request.COOKIES.get("refresh")
+        if not refresh_token:
+            return Response(
+                {"message": "로그아웃 실패: 리프레시 토큰이 없습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not self.user_service.logout_user(refresh_token):
+            return Response(
+                {"message": "유효하지 않은 리프레시 토큰입니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response = Response({"message": "로그아웃 성공"}, status=status.HTTP_200_OK)
         response.delete_cookie("access")
         response.delete_cookie("refresh")
-
         return response
 
 

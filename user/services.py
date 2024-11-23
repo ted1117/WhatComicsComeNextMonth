@@ -1,5 +1,9 @@
+from typing import Any
+
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from user.models import CustomUser
 
 
 class UserService:
@@ -15,7 +19,7 @@ class UserService:
         self.serializer_class = serializer_class
         self.token_serializer = token_serializer
 
-    def register_user(self, data):
+    def register_user(self, data) -> dict[str, Any]:
         """
         사용자 생성 및 토큰 발급
 
@@ -34,7 +38,7 @@ class UserService:
             "refresh": str(refresh),
         }
 
-    def login_user(self, data):
+    def login_user(self, data) -> dict[str, Any]:
         """
         사용자 로그인
 
@@ -51,7 +55,7 @@ class UserService:
             "refresh_token": validated_data["refresh"],
         }
 
-    def logout_user(self, refresh):
+    def logout_user(self, refresh) -> bool:
         """
         사용자 로그아웃
 
@@ -65,7 +69,7 @@ class UserService:
         except (TokenError, InvalidToken):
             return False
 
-    def deactivate_user(self, user):
+    def deactivate_user(self, user) -> CustomUser:
         user.is_active = False
         user.save()
         return user
