@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from user.models import CustomUser
+from user.validators import EmailValidator, PasswordValidator
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
@@ -9,16 +10,18 @@ from rest_framework_simplejwt.settings import api_settings
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=4)
+    email = serializers.EmailField(validators=[EmailValidator()])
+    password = serializers.CharField(write_only=True, validators=[PasswordValidator()])
+    password2 = serializers.CharField(write_only=True, min_length=4)
 
     class Meta:
         model = CustomUser
-        fields = ["email", "password"]
+        fields = ["email", "password", "password2"]
 
-    def validate_email(self, value) -> str:
-        if CustomUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("이미 사용 중인 이메일입니다.")
-        return value
+    def validate(self, attrs) -> str:
+        if attrs["password"] != attrs["password2"]:
+            raise serializers.ValidationError("비밀번호가 일치하지 않습니다.")
+        return attrs
 
     def create(self, validated_data) -> CustomUser:
         user = CustomUser.objects.create_user(
