@@ -1,4 +1,5 @@
 from typing import Any
+
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request

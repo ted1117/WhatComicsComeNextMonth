@@ -1,6 +1,6 @@
 from typing import Any
 
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import CustomUser

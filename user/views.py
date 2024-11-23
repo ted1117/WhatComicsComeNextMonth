@@ -1,10 +1,11 @@
-from typing import Dict, Any
+from typing import Any
 
 from django.shortcuts import render
-from rest_framework import status, viewsets
-from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
 from user.authentication import CustomJWTAuthentication
 from user.models import CustomUser
@@ -14,7 +15,7 @@ from user.services import UserService
 
 
 # Create your views here.
-class UserViewset(viewsets.ModelViewSet):
+class UserViewset(ModelViewSet):
     """
     사용자 관리 Viewset
     ----
@@ -47,10 +48,9 @@ class UserViewset(viewsets.ModelViewSet):
         POST 요청(회원가입)은 인증을 건너뛴다.
         """
         if not self.request or not hasattr(self.request, "method"):
-            # drf-spectacular에서 호출될 때 Mock Request를 처리
             return [CustomJWTAuthentication()]
 
-        if self.request.method == "post":
+        if self.request.method == "POST":
             return []
         return [CustomJWTAuthentication()]
 
