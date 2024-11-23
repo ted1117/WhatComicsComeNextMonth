@@ -226,4 +226,10 @@ Temporary Items
 .history
 .ionide
 
+# etc.
+*.png
+*.ini
+*.json
+*.dot
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,django,visualstudiocode
