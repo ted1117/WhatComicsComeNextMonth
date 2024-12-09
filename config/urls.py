@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/", include("comic.urls")),
     path("cart/", include("cart.urls")),
     path("users/", include("user.urls")),
+    path("archive/", include("archive.urls")),
     path("silk/", include("silk.urls", namespace="silk")),
     # Open API 문서
     path("docs/json/", SpectacularJSONAPIView.as_view(), name="schema-json"),
