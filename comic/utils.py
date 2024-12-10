@@ -5,10 +5,14 @@ import re
 def calculate_next_month():
     today = date.today()
 
-    next_month_first_day = datetime(today.year, today.month + 1, 1)
-    next_month_last_day = datetime(today.year, today.month + 2, 1) - timedelta(days=1)
+    next_month_first_day = datetime(today.year, (today.month + 1) % 12, 1)
+    next_month_last_day = datetime(today.year, (today.month + 2) % 12, 1) - timedelta(
+        days=1
+    )
 
-    return next_month_first_day.strftime("%Y%m%d"), next_month_last_day.strftime("%Y%m%d")
+    return next_month_first_day.strftime("%Y%m%d"), next_month_last_day.strftime(
+        "%Y%m%d"
+    )
 
 
 def parse_staff(staff_string):
