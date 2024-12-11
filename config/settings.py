@@ -157,7 +157,8 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
+        "HOST": env("DB_DOCKER_HOST"),
+        # "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
     }
 }
@@ -244,8 +245,11 @@ SIMPLE_JWT = {
 
 # Celery
 # Redis를 브로커로 사용하는 경우
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+# CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+# CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 
 # Celery Configuration Options
 CELERY_TIMEZONE = "Asia/Seoul"
