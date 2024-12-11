@@ -4,23 +4,27 @@
 - 진행중!
 
 ## 개발환경
-- Frontend
+<!-- - Frontend
   - HTML
   - CSS
-  - Vanilla JS
+  - Vanilla JS -->
 - Backend
   - Python
   - Django REST Framework
+- DB
+  - PostgreSQL
 - Etc
+  - Docker
   - VS Code
+  - Pycharm CE
   - Postman
   - Github
 
 ## 기능
 - 다음 달에 출간되는 만화 전자책을 [ISBN 서지정보](https://www.nl.go.kr/NL/contents/N31101030500.do) 전산으로 미리 알아봅시다.
 - 만화책을 사기 위해 충전할 캐시를 미리 계산할 수 있습니다.
-- 지금까지 읽은 만화책을 기록할 수 있습니다.(WIP)
-- 자신이 읽은 만화에 평점과 리뷰를 남길 수 있습니다.(WIP)
+- 지금까지 읽은 만화책을 기록할 수 있습니다.
+- 자신이 읽은 만화에 평점과 리뷰를 남길 수 있습니다.
 
 ## API 명세
 ### Comic
@@ -43,9 +47,19 @@
 | `/cart/`             | **POST**        | 만화를 장바구니에 추가                |
 | `/cart/`             | **DELETE**      | 장바구니에서 만화 삭제                |
 
+### Rating
+| **Endpoint** | **HTTP Method** | **설명** |
+|-----------------------|-----------------|-------------------------------------|
+| `/archive/?comic_id={comic_id}/` | **GET** | 만화별 평가 조회 |
+| `/archive/?user_id={user_id}/` | **GET** | 유저별 만화 평가 조회 |
+| `/archive/` | **POST** | 만화 평가 생성 |
+| `/archive/pk/` | **DELETE** | 만화 평가 삭제 |
+
+
 
 ## ERD
-![diagram](https://github.com/user-attachments/assets/58e51ca9-d7b3-4334-bbf8-98465ea0de0f)
+<!--![diagram](https://github.com/user-attachments/assets/58e51ca9-d7b3-4334-bbf8-98465ea0de0f)-->
+![comic_erd](https://github.com/user-attachments/assets/087d297f-d1bc-4d67-83bf-312da6893b7c)
 
 ## 트러블슈팅
 ### 데이터 불러오기
