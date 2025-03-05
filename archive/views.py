@@ -3,7 +3,7 @@ from decimal import Decimal
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -21,13 +21,18 @@ class RatingPageNumberPagination(PageNumberPagination):
 
 
 class RatingViewSet(ModelViewSet):
-    queryset = Rating.objects.all()
+    queryset = Rating.objects
     serializer_class = RatingSerializer
     pagination_class = RatingPageNumberPagination
     authentication_classes = [CustomJWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     rating_service = RatingService()
+
+    def get_permissions(self):
+        if self.action in ("create", "destroy"):
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get_queryset(self):
         comic_id = self.request.query_params.get("comic_id")
@@ -40,12 +45,12 @@ class RatingViewSet(ModelViewSet):
         elif user_id:
             queryset = self.queryset.filter(user=user_id)
         else:
-            queryset = self.queryset
+            queryset = self.queryset.all()
 
         return queryset
 
     def get_serializer_class(self):
-        if self.action == "retrieve":
+        if self.action in ("retrieve", "list"):
             return RatingRetrieveSerializer
         return RatingSerializer
 
