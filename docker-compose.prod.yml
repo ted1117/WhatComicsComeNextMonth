@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    image: ted111712/comic_web:latest
     container_name: comic_web
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
     volumes:
@@ -12,6 +13,7 @@ services:
 
   worker:
     build: .
+    image: ted111712/comic_worker:latest
     container_name: comic_worker
     command: celery -A config worker -l info
     env_file:
@@ -22,6 +24,7 @@ services:
 
   beat:
     build: .
+    image: ted111712/comic_beat:latest
     container_name: comic_beat
     command: celery -A config beat -l info #--schedule=/app/beatdata/beat.db
     env_file:
@@ -42,13 +45,19 @@ services:
   nginx:
     image: nginx:alpine
     container_name: comic_nginx
+    restart: unless-stopped
     depends_on:
       - web
+      - certbot
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - static_data:/app/static
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     ports:
       - "80:80"
+      - "443:443"
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -58,6 +67,15 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+
+  certbot:
+    image: certbot/certbot
+    container_name: comic_certbot
+    restart: unless-stopped
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   redis_data:
