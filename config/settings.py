@@ -157,7 +157,8 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_DOCKER_HOST"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
+        # "HOST": env("DB_DOCKER_HOST"),
         # "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
     }
