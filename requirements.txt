@@ -18,7 +18,7 @@ click-repl==0.3.0
 cron-descriptor==1.4.5
 debugpy==1.8.9
 dj-rest-auth==6.0.0
-Django==5.0.4
+Django==5.1.5
 django-allauth==0.63.6
 django-auth==0.1.9
 django-celery-beat==2.7.0
