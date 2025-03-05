@@ -20,17 +20,16 @@ class RatingSerializer(serializers.ModelSerializer):
 
 
 class RatingRetrieveSerializer(serializers.ModelSerializer):
-    comic = ComicSerializer(read_only=True)
-    user = UserSerializer(read_only=True)
-
     class Meta:
         model = Rating
-        fields = ["comic", "user", "rating", "comment"]
+        fields = ["comic", "rating", "comment"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        data["user"] = instance.user.nickname
+        data["user_id"] = instance.user.id
+        data["user_nickname"] = instance.user.nickname
         data["comic"] = instance.comic.title
+        data["comic_id"] = instance.comic.id
 
         return data
