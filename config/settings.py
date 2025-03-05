@@ -44,6 +44,11 @@ ALLOWED_HOSTS = ["*"]
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
+print("========================================")
+print(f"🚀 Django Environment: {DJANGO_ENVIRONMENT}")  # 환경 변수 값 출력
+print(f"🐞 Debug Mode: {' 활성화됨 ' if DEBUG else ' 비활성화됨 '}")  # DEBUG 값 출력
+print("========================================")
+
 
 # Application definition
 
