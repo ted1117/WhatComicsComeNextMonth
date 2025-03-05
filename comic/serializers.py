@@ -4,13 +4,12 @@ from comic.models import Comic, Publisher
 
 
 class ComicModelSerializer(serializers.ModelSerializer):
-    # publisher = serializers.CharField(source="publisher.name")
     publisher = serializers.StringRelatedField()
 
     class Meta:
         model = Comic
-        # fields = "__all__"
-        exclude = ["id"]
+        fields = "__all__"
+        # exclude = ["id"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
