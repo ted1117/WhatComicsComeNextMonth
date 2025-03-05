@@ -25,9 +25,7 @@ class CartAPIView(generics.GenericAPIView):
     serializer_class = CartSerializer
 
     def get(self, request, *args, **kwargs) -> Response:
-        queryset = Cart.objects.filter(user=request.user).order_by(
-            "created_at"
-        )
+        queryset = Cart.objects.filter(user=request.user).order_by("created_at")
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -43,9 +41,7 @@ class CartAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs) -> Response:
-        serializer = CartSerializer(
-            data=request.data, context={"request": request}
-        )
+        serializer = CartSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -54,17 +50,16 @@ class CartAPIView(generics.GenericAPIView):
             )
 
         return Response(
-            {
-                "message": "만화가 장바구니에 담기지 않았습니다.\n다시 시도하세요."
-            },
+            {"message": "만화가 장바구니에 담기지 않았습니다.\n다시 시도하세요."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     def delete(self, request, *args, **kwargs) -> Response:
         try:
-            comics = request.data.get("comics")
+            comics = request.data.get("comics", [])
+            comics_ids = [comic.get("comic_id") for comic in comics]
             deleted_comics = Cart.objects.filter(
-                user=request.user, comic_id__in=comics
+                user=request.user, comic_id__in=comics_ids
             )
             deleted_comics.delete()
 
