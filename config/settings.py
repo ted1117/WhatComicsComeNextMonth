@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 import environ
+import os
 import rest_framework
 import rest_framework.permissions
 
@@ -21,7 +22,12 @@ env = environ.Env(DEBUG=(bool, True))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(BASE_DIR / ".env")
+DJANGO_ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", None)
+
+if DJANGO_ENVIRONMENT == "production":
+    environ.Env.read_env(BASE_DIR / ".env.prod")
+else:
+    environ.Env.read_env(BASE_DIR / ".env")
 
 # 국립중앙도서관 Open API KEY
 API_KEY = env("API_KEY")
@@ -35,7 +41,6 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
-import os
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
