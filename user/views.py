@@ -2,6 +2,11 @@ from typing import Any
 
 from django.shortcuts import render
 from rest_framework import status
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -86,7 +91,7 @@ class UserViewset(ModelViewSet):
                         "refresh": result["refresh"],
                     },
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
 
             response.set_cookie(
@@ -251,6 +256,19 @@ class UserLogoutView(APIView):
         response.delete_cookie("access")
         response.delete_cookie("refresh")
         return response
+
+
+@api_view(["GET"])
+@authentication_classes([CustomJWTAuthentication])
+def check_login_status(request):
+    user = request.user
+
+    if user.is_authenticated:
+        return Response(
+            {"is_logged_in": True, "email": user.email, "nickname": user.nickname},
+            status=status.HTTP_200_OK,
+        )
+    return Response({"is_logged_in": False})
 
 
 def index(request):
