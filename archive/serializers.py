@@ -22,7 +22,7 @@ class RatingSerializer(serializers.ModelSerializer):
 class RatingRetrieveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ["comic", "rating", "comment"]
+        fields = ["comic", "rating", "comment", "created_at"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -31,5 +31,19 @@ class RatingRetrieveSerializer(serializers.ModelSerializer):
         data["user_nickname"] = instance.user.nickname
         data["comic"] = instance.comic.title
         data["comic_id"] = instance.comic.id
+
+        return data
+
+
+class RatingListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = ["rating", "comment", "created_at"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        data["user_id"] = instance.user.id
+        data["user_nickname"] = instance.user.nickname
 
         return data
