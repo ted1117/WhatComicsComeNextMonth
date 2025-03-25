@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.db.models import Avg
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
@@ -22,6 +23,22 @@ class RatingPageNumberPagination(PageNumberPagination):
     page_size: int = 20
     page_size_query_param: str = "page_size"
     max_page_size: int = 100
+
+    def get_paginated_response(self, data):
+        context = {
+            "count": self.page.paginator.count,
+            "next": self.get_next_link(),
+            "previous": self.get_previous_link(),
+            "results": data,
+        }
+
+        if isinstance(data, dict):
+            average_ratings = data.get("average_ratings", None)
+            if average_ratings is not None:
+                context["average_ratings"] = average_ratings
+                context["results"] = data.get("ratings", [])
+
+        return Response(context, status=status.HTTP_200_OK)
 
 
 class RatingViewSet(ModelViewSet):
@@ -68,6 +85,36 @@ class RatingViewSet(ModelViewSet):
             return RatingListSerializer  # 특정 만화 평점 목록
 
         return serializer_classes.get(self.action, RatingSerializer)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        if self.comic_id and not self.user_id:
+            # 평균 평점 계산
+            average_rating = queryset.aggregate(Avg("rating"))["rating__avg"]
+            average_rating = (
+                round(float(average_rating), 1) if average_rating is not None else 0.0
+            )
+
+            response_data = {"average_ratings": average_rating}
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                response_data["ratings"] = serializer.data
+                return self.get_paginated_response(response_data)
+
+            serializer = self.get_serializer(queryset, many=True)
+            response_data["ratings"] = serializer.data
+            return Response(response_data)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         comic_id = request.data.get("comic_id")
