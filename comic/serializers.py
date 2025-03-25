@@ -26,7 +26,22 @@ class ComicCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comic
         fields = "__all__"
-        list_serilizer_class = ComicListSerializer
+        list_serializer_class = ComicListSerializer
+
+
+class ComicRetrieveSerializer(serializers.ModelSerializer):
+    publisher = serializers.StringRelatedField()
+
+    class Meta:
+        model = Comic
+        fields = [
+            "title",
+            "series_title",
+            "author",
+            "published_at",
+            "publisher",
+            "price",
+        ]
 
 
 class ComicSerializer(serializers.Serializer):

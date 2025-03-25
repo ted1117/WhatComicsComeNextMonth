@@ -7,7 +7,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 
 from comic.models import Comic
-from comic.serializers import ComicModelSerializer
+from comic.serializers import ComicModelSerializer, ComicRetrieveSerializer
 from comic.services import ComicService
 
 
@@ -25,6 +25,11 @@ class ComicListAPIView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_fields = ["publisher", "isSet"]
     search_fields = ["title", "author"]
+
+
+class ComicRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Comic.objects.all()
+    serializer_class = ComicRetrieveSerializer
 
 
 class CustomSearchFilter(filters.SearchFilter):
