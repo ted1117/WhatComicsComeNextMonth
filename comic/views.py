@@ -1,3 +1,6 @@
+import calendar
+import datetime
+
 from django.db.models import Q
 from django.shortcuts import render
 
@@ -25,6 +28,31 @@ class ComicListAPIView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_fields = ["publisher", "isSet"]
     search_fields = ["title", "author"]
+
+    def get_queryset(self):
+        today = datetime.date.today()
+        current_day = today.day
+        current_year = today.year
+        current_month = today.month
+
+        last_day_of_month = calendar.monthrange(current_year, current_month)[1]
+
+        base_queryset = Comic.objects
+
+        if 7 <= current_day <= last_day_of_month:
+            next_month_year = current_year
+            next_month_month = current_month + 1
+            if next_month_month > 12:
+                next_month_month = 1
+                next_month_year += 1
+
+            queryset = base_queryset.filter(
+                published_at__year=next_month_year, published_at__month=next_month_month
+            )
+        else:
+            queryset = base_queryset.all()
+
+        return queryset.order_by("published_at")
 
 
 class ComicRetrieveAPIView(generics.RetrieveAPIView):
